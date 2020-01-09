@@ -1,0 +1,5 @@
+#api
+API/keys.js
+
+#packages - mongoose, express from npm (install node.js and mongoDB, body-parser)
+node_modules/
