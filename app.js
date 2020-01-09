@@ -15,7 +15,8 @@ var blogSchema = new mongoose.Schema({
     created: {type: Date, default: Date.now}
 
 });
-
+//to delete one entry from db
+//db.blogs.deleteOne( { "_id" : ObjectId("5e176a3d7d6f9021e4a2a292") } );
 //set up database using the schema we created
 var Blog = mongoose.model("Blog", blogSchema);
 
