@@ -1,12 +1,20 @@
-var express =   require("express"),
-bodyParser =    require("body-parser"),
-mongoose =      require('mongoose');
-app =           express();
+var express      =  require("express"),
+expressSanitizer =  require("express-sanitizer"),
+methodOverride   =  require("method-override"),
+bodyParser       =  require("body-parser"),
+mongoose         =  require('mongoose');
+app              =  express();
 
-mongoose.connect('mongodb://localhost/restfulBlogApp');
+//start mongoose client
+mongoose.set('useUnifiedTopology', true);
+mongoose.connect('mongodb://localhost/restfulBlogApp', {useNewUrlParser: true});
+
+//use and set for express app
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(methodOverride("_method"));
+app.use(expressSanitizer());
 
 var blogSchema = new mongoose.Schema({
     title: String,
@@ -55,6 +63,9 @@ app.get("/blogs/new", function(req, res){
 app.post("/blogs", function(req, res){
     //create blog, then redirect
     //referring back to form, blog[title] refers to req.body.blog.title
+    //sanitize body - remove script tags from body since allowing user to type in html for body
+    req.body.blog.body = req.sanitize(req.body.blog.body);
+    
     var data = req.body.blog;
     Blog.create(data, function(err, newBlog){
         if(err){
@@ -81,8 +92,51 @@ app.get("/blogs/:id", function(req, res){
 
 });
 
+//EDIT ROUTE
+app.get("/blogs/:id/edit", function(req, res){
+    //first use id to find correct blog
+    Blog.findById(req.params.id, function(err, foundBlog){
+        if(err){
+            res.redirect("/blogs");
+        }
+        else{
+            res.render("edit", {blog : foundBlog});
+        }
+    });
+});
 
 
+//update route - use method_override package 
+app.put("/blogs/:id", function(req, res){
+    //sanitize code - remove script tags
+    req.body.blog.body = req.sanitize(req.body.blog.body);
+
+    Blog.findByIdAndUpdate(req.params.id, req.body.blog, function(err, updatedBlog){
+        if(err){
+            res.redirect("/blogs");
+        }
+        else{
+            res.redirect("/blogs/" + updatedBlog._id);
+        }
+        
+    });
+
+});
+
+//delete route
+app.delete("/blogs/:id", function(req, res){
+    //destroy and redirect
+    Blog.findByIdAndDelete(req.params.id, function(err){
+        if(err){
+            res.send(err);
+        }
+        else{
+            res.redirect("/blogs");
+        }
+    });
+    
+    
+});
 
 
 app.listen(3000, function(){
